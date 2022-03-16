@@ -31,13 +31,6 @@ enum DriverActivitySort
 };
 
 
-struct TestActivityList
-{
-	int class_index_;
-	int time_;
-
-};
-
 struct Warning
 {
 	bool warning_status_;
@@ -108,223 +101,153 @@ int main()
 	int frame_now;
 	float conf;
 
-	int state_previous = 0;
+	
 
 	//Input
 	vector<InferenceResult> buffer_list;
 	int safe_mode_buffer;
+	int state_previous = 0;
 
 	// Output
 	Warning warning;
 	warning.warning_status_ = false;
 
 
-	//For test
-	vector<TestActivityList> test_activity_list;
-	TestActivityList temp_test_activity;
+	InferenceResult temp_inference_result;
+	temp_inference_result.state_now_ = frame_now;
+	temp_inference_result.conf_ = conf;
 
-	// Activity 1
-	temp_test_activity.class_index_ = kEating;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
 
-	// Activity 2
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 2;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 3
-	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 4
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 3;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 5
-	temp_test_activity.class_index_ = kSmoking;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 6
-	temp_test_activity.class_index_ = kPhoneInteraction;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 7
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 1;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 8
-	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 4;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 9
-	temp_test_activity.class_index_ = kEating;
-	temp_test_activity.time_ = 10;
-	test_activity_list.push_back(temp_test_activity);
-
-	vector<int> test_queue;
-	for (vector<TestActivityList>::iterator it_test_activity_list = test_activity_list.begin(); it_test_activity_list != test_activity_list.end(); it_test_activity_list++)
+	if (conf >= kConfThreshold)
 	{
-		for (int i = 0; i < it_test_activity_list->time_*kFPS; i++) 
+		//cout << "Start" << endl;
+
+		//FIFO
+		buffer_list.push_back(temp_inference_result);
+		if (buffer_list.size() == buffer_frame)
 		{
-			test_queue.push_back(it_test_activity_list->class_index_);
+			buffer_list.assign(buffer_list.begin() + 1, buffer_list.end());
 		}
-	}
 
-	
-	int frame_index = 0;
-	for (vector<int>::iterator it = test_queue.begin(); it != test_queue.end(); it++)
-	{
-		cout << "current activity: " << *it << "    frame: " << frame_index << endl;
-		frame_now = *it;
-		conf = 1.0;
-
-		//For test
-
-		InferenceResult temp_inference_result;
-		temp_inference_result.state_now_ = frame_now;
-		temp_inference_result.conf_ = conf;
-
-
-		if (conf >= kConfThreshold)
+		//Sum and count
+		map<int, CountInferenceResult> buffer;
+		for (vector<InferenceResult>::iterator it_buffer_list = buffer_list.begin(); it_buffer_list != buffer_list.end(); it_buffer_list++)
 		{
-			//cout << "Start" << endl;
-
-			//FIFO
-			buffer_list.push_back(temp_inference_result);
-			if (buffer_list.size() == buffer_frame)
+			if (!buffer.count(it_buffer_list->state_now_))
 			{
-				buffer_list.assign(buffer_list.begin() + 1, buffer_list.end());
+				buffer[it_buffer_list->state_now_] = CountInferenceResult{ 1, it_buffer_list->conf_ };
+			}
+			else
+			{
+				buffer[it_buffer_list->state_now_].count_ += 1;
+				buffer[it_buffer_list->state_now_].conf_ += conf;
 			}
 
-			//Sum and count
-			map<int, CountInferenceResult> buffer;
-			for (vector<InferenceResult>::iterator it_buffer_list = buffer_list.begin(); it_buffer_list != buffer_list.end(); it_buffer_list++)
-			{
-				if (!buffer.count(it_buffer_list->state_now_))
-				{
-					buffer[it_buffer_list->state_now_] = CountInferenceResult{ 1, it_buffer_list->conf_ };
-				}
-				else
-				{
-					buffer[it_buffer_list->state_now_].count_ += 1;
-					buffer[it_buffer_list->state_now_].conf_ += conf;
-				}
+		}
 
+		if (temp_inference_result.state_now_ != kSafeMode)
+		{
+			safe_mode_buffer = 0;
+
+			// multi_activity_buffer
+			map<int, CountInferenceResult> multi_activity_buffer;
+			for (map<int, CountInferenceResult>::iterator it_buffer = buffer.begin(); it_buffer != buffer.end(); it_buffer++)
+			{
+				if (it_buffer->first == kSmoking || it_buffer->first == kDrinking || it_buffer->first == kEating || it_buffer->first == kPhoneInteraction)
+				{
+					multi_activity_buffer[it_buffer->first] = it_buffer->second;
+				}
 			}
 
-			if (temp_inference_result.state_now_ != kSafeMode)
+			// max time 
+			int max_time = 0;
+			int total_time = 0;
+			if (multi_activity_buffer.size() != 0)
 			{
-				safe_mode_buffer = 0;
-
-				// multi_activity_buffer
-				map<int, CountInferenceResult> multi_activity_buffer;
-				for (map<int, CountInferenceResult>::iterator it_buffer = buffer.begin(); it_buffer != buffer.end(); it_buffer++)
+				vector<int> time_array_max;
+				for (map<int, CountInferenceResult>::iterator it_multi_activity_buffer = multi_activity_buffer.begin(); it_multi_activity_buffer != multi_activity_buffer.end(); it_multi_activity_buffer++)
 				{
-					if (it_buffer->first == kSmoking || it_buffer->first == kDrinking || it_buffer->first == kEating || it_buffer->first == kPhoneInteraction)
-					{
-						multi_activity_buffer[it_buffer->first] = it_buffer->second;
-					}
+					time_array_max.push_back(it_multi_activity_buffer->second.count_);
 				}
+				max_time = *max_element(time_array_max.begin(), time_array_max.end());
+			}
 
-				// max time 
-				int max_time = 0;
-				int total_time = 0;
-				if (multi_activity_buffer.size() != 0)
+			if (max_time >= alert_frame)
+			{
+				cout << "max_time: " << max_time << endl;
+				int alert_result = 1;
+				int longest_frame = 0;
+				float alert_conf = 0.0;
+				SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+
+				cout << "-----> single activity: " << alert_result << endl;
+				warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
+				warning.warning_activity_ = alert_result;
+			}
+			else
+			{
+				// Sum
+				vector<int> time_array_sum;
+				for (map<int, CountInferenceResult>::iterator it_multi_activity_buffer = multi_activity_buffer.begin(); it_multi_activity_buffer != multi_activity_buffer.end(); it_multi_activity_buffer++)
 				{
-					vector<int> time_array_max;
-					for (map<int, CountInferenceResult>::iterator it_multi_activity_buffer = multi_activity_buffer.begin(); it_multi_activity_buffer != multi_activity_buffer.end(); it_multi_activity_buffer++)
-					{
-						time_array_max.push_back(it_multi_activity_buffer->second.count_);
-					}
-					max_time = *max_element(time_array_max.begin(), time_array_max.end());
+					time_array_sum.push_back(it_multi_activity_buffer->second.count_);
 				}
+				total_time = accumulate(time_array_sum.begin(), time_array_sum.end(), 0);
 
-				if (max_time >= alert_frame)
+				if (total_time >= alert_frame)
 				{
-					cout << "max_time: " << max_time << endl;
+					cout << "total_time: " << total_time << endl;
 					int alert_result = 1;
 					int longest_frame = 0;
 					float alert_conf = 0.0;
 					SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
-					cout << "-----> single activity: " << alert_result << endl;
+					cout << "-----> multi  activity: " << alert_result << endl;
 					warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
 					warning.warning_activity_ = alert_result;
-				}
-				else
-				{
-					// Sum
-					vector<int> time_array_sum;
-					for (map<int, CountInferenceResult>::iterator it_multi_activity_buffer = multi_activity_buffer.begin(); it_multi_activity_buffer != multi_activity_buffer.end(); it_multi_activity_buffer++)
-					{
-						time_array_sum.push_back(it_multi_activity_buffer->second.count_);
-					}
-					total_time = accumulate(time_array_sum.begin(), time_array_sum.end(), 0);
-
-					if (total_time >= alert_frame)
-					{
-						cout << "total_time: " << total_time << endl;
-						int alert_result = 1;
-						int longest_frame = 0;
-						float alert_conf = 0.0;
-						SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
-
-						cout << "-----> multi  activity: " << alert_result << endl;
-						warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
-						warning.warning_activity_ = alert_result;
-
-					}
 
 				}
-
 
 			}
 
 
+		}
+
+
+		else
+		{
+			if (state_previous == kSafeMode)
+			{
+				safe_mode_buffer += 1;
+			}
 			else
 			{
-				if (state_previous == kSafeMode)
-				{
-					safe_mode_buffer += 1;
-				}
-				else
-				{
-					safe_mode_buffer = 1;
-				}
+				safe_mode_buffer = 1;
+			}
 
-				if (safe_mode_buffer >= reset_frame)
+			if (safe_mode_buffer >= reset_frame)
+			{
+				if (warning.warning_status_ == true)
 				{
-					if (warning.warning_status_ == true)
-					{
-						warning.warning_status_ = false;
-						cout << "safe driving mode last for 10 frames, release warning" << endl;
-					}
-					safe_mode_buffer -= 1;
-
+					warning.warning_status_ = false;
+					cout << "safe driving mode last for 10 frames, release warning" << endl;
 				}
-
+				safe_mode_buffer -= 1;
 
 			}
 
-			state_previous = temp_inference_result.state_now_;
 
 		}
 
-		if (warning.warning_status_ == true)
-		{
-			cout << "warning status: " << warning.warning_status_ << "   warning activity: " << warning.warning_activity_ << endl;
-		}
-
-		frame_index++;
+		state_previous = temp_inference_result.state_now_;
 
 	}
-	system("pause");
+
+	if (warning.warning_status_ == true)
+	{
+		cout << "warning status: " << warning.warning_status_ << "   warning activity: " << warning.warning_activity_ << endl;
+	}
+
+
     return 0;
 }
