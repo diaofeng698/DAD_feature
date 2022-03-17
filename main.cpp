@@ -198,7 +198,7 @@ int main()
 
 			//FIFO
 			buffer_list.push_back(temp_inference_result);
-			if (buffer_list.size() == buffer_frame)
+			if (buffer_list.size() == buffer_frame + 1)
 			{
 				buffer_list.assign(buffer_list.begin() + 1, buffer_list.end());
 			}
