@@ -216,6 +216,7 @@ int main()
 
 		else
 		{
+			// Safe Driving Time Accumulate
 			if (state_previous == kSafeMode)
 			{
 				safe_mode_buffer += 1;
@@ -234,6 +235,74 @@ int main()
 				}
 				safe_mode_buffer -= 1;
 
+			}
+
+			else
+			{
+				if (warning.warning_status_ == true)
+				{
+					// multi_activity_buffer
+					map<int, CountInferenceResult> multi_activity_buffer;
+					for (map<int, CountInferenceResult>::iterator it_buffer = buffer.begin(); it_buffer != buffer.end(); it_buffer++)
+					{
+						if (it_buffer->first == kSmoking || it_buffer->first == kDrinking || it_buffer->first == kEating || it_buffer->first == kPhoneInteraction)
+						{
+							multi_activity_buffer[it_buffer->first] = it_buffer->second;
+						}
+					}
+
+					// max time 
+					int max_time = 0;
+					int total_time = 0;
+					if (multi_activity_buffer.size() != 0)
+					{
+						vector<int> time_array_max;
+						for (map<int, CountInferenceResult>::iterator it_multi_activity_buffer = multi_activity_buffer.begin(); it_multi_activity_buffer != multi_activity_buffer.end(); it_multi_activity_buffer++)
+						{
+							time_array_max.push_back(it_multi_activity_buffer->second.count_);
+						}
+						max_time = *max_element(time_array_max.begin(), time_array_max.end());
+					}
+
+					if (max_time >= alert_frame)
+					{
+						cout << "max_time: " << max_time << endl;
+						int alert_result = 1;
+						int longest_frame = 0;
+						float alert_conf = 0.0;
+						SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+
+						cout << "-----> single activity: " << alert_result << endl;
+						warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
+						warning.warning_activity_ = alert_result;
+					}
+					else
+					{
+						// Sum
+						vector<int> time_array_sum;
+						for (map<int, CountInferenceResult>::iterator it_multi_activity_buffer = multi_activity_buffer.begin(); it_multi_activity_buffer != multi_activity_buffer.end(); it_multi_activity_buffer++)
+						{
+							time_array_sum.push_back(it_multi_activity_buffer->second.count_);
+						}
+						total_time = accumulate(time_array_sum.begin(), time_array_sum.end(), 0);
+
+						if (total_time >= alert_frame)
+						{
+							cout << "total_time: " << total_time << endl;
+							int alert_result = 1;
+							int longest_frame = 0;
+							float alert_conf = 0.0;
+							SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+
+							cout << "-----> multi  activity: " << alert_result << endl;
+							warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
+							warning.warning_activity_ = alert_result;
+
+						}
+
+					}
+
+				}
 			}
 
 
