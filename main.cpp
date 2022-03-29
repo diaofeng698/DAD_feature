@@ -7,7 +7,7 @@
 
 using namespace std;
 
-struct InferenceResult
+struct InferenceResultLogic
 {
 	int state_now_;  
 	float conf_;    
@@ -120,12 +120,12 @@ int main()
 	int state_previous = 0;
 
 	//Input
-	vector<InferenceResult> buffer_list;
+	vector<InferenceResultLogic> buffer_list;
 	int safe_mode_buffer;
 
 	// Output
 	Warning warning;
-	warning.warning_status_ = false;
+	
 
 
 	//For test
@@ -195,8 +195,8 @@ int main()
 		conf = 1.0;
 
 		//For test
-
-		InferenceResult temp_inference_result;
+		warning.warning_status_ = false;
+		InferenceResultLogic temp_inference_result;
 		temp_inference_result.state_now_ = frame_now;
 		temp_inference_result.conf_ = conf;
 
@@ -214,7 +214,7 @@ int main()
 
 			//Sum and count
 			map<int, CountInferenceResult> buffer;
-			for (vector<InferenceResult>::iterator it_buffer_list = buffer_list.begin(); it_buffer_list != buffer_list.end(); it_buffer_list++)
+			for (vector<InferenceResultLogic>::iterator it_buffer_list = buffer_list.begin(); it_buffer_list != buffer_list.end(); it_buffer_list++)
 			{
 				if (!buffer.count(it_buffer_list->state_now_))
 				{
