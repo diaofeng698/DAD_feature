@@ -42,6 +42,8 @@ struct Warning
 {
 	bool warning_status_;
 	int warning_activity_;
+	float warning_conf_;
+
 };
 
  
@@ -78,12 +80,16 @@ void SortBuffer(map<int, CountInferenceResult> multi_activity_buffer, int* alert
 }
 
 
-bool OutputAlert(const int alert_result, const int longest_frame, const float alert_conf)
+Warning OutputAlert(const int alert_result, const int longest_frame, const float alert_conf)
 {
-	float average_alert_conf = alert_conf / longest_frame;
-	bool warning_status = true;
-	cout << "alert: " << alert_result << " conf : " << average_alert_conf << " last longest time in 50 frames" << endl;
-	return warning_status;
+	Warning warning_output;
+	warning_output.warning_status_ = true;
+	warning_output.warning_conf_ = alert_conf / longest_frame;
+	warning_output.warning_activity_ = alert_result;
+
+	cout << "alert: " << alert_result << " conf : " << warning_output.warning_conf_ << endl;
+
+	return warning_output;
 }
 
 
@@ -258,8 +264,7 @@ int main()
 					SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
 					cout << "-----> single activity: " << alert_result << endl;
-					warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
-					warning.warning_activity_ = alert_result;
+					warning = OutputAlert(alert_result, longest_frame, alert_conf);
 				}
 				else
 				{
@@ -280,8 +285,7 @@ int main()
 						SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
 						cout << "-----> multi  activity: " << alert_result << endl;
-						warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
-						warning.warning_activity_ = alert_result;
+						warning = OutputAlert(alert_result, longest_frame, alert_conf);
 
 					}
 
@@ -351,8 +355,8 @@ int main()
 							SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
 							cout << "-----> single activity: " << alert_result << endl;
-							warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
-							warning.warning_activity_ = alert_result;
+							warning = OutputAlert(alert_result, longest_frame, alert_conf);
+
 						}
 						else
 						{
@@ -373,8 +377,7 @@ int main()
 								SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
 								cout << "-----> multi  activity: " << alert_result << endl;
-								warning.warning_status_ = OutputAlert(alert_result, longest_frame, alert_conf);
-								warning.warning_activity_ = alert_result;
+								warning = OutputAlert(alert_result, longest_frame, alert_conf);
 
 							}
 
