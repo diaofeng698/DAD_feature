@@ -134,7 +134,7 @@ int main()
 
 	// Activity 1
 	temp_test_activity.class_index_ = kEating;
-	temp_test_activity.time_ = 5;
+	temp_test_activity.time_ = 10;
 	test_activity_list.push_back(temp_test_activity);
 
 	// Activity 2
@@ -142,40 +142,40 @@ int main()
 	temp_test_activity.time_ = 2;
 	test_activity_list.push_back(temp_test_activity);
 
-	// Activity 3
-	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 3
+	//temp_test_activity.class_index_ = kDrinking;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 4
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 3;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 4
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 5
-	temp_test_activity.class_index_ = kSmoking;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 5
+	//temp_test_activity.class_index_ = kSmoking;
+	//temp_test_activity.time_ = 5;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 6
-	temp_test_activity.class_index_ = kPhoneInteraction;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 6
+	//temp_test_activity.class_index_ = kPhoneInteraction;
+	//temp_test_activity.time_ = 5;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 7
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 1;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 7
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 1;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 8
-	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 4;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 8
+	//temp_test_activity.class_index_ = kDrinking;
+	//temp_test_activity.time_ = 4;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 9
-	temp_test_activity.class_index_ = kEating;
-	temp_test_activity.time_ = 10;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 9
+	//temp_test_activity.class_index_ = kEating;
+	//temp_test_activity.time_ = 10;
+	//test_activity_list.push_back(temp_test_activity);
 
 	vector<int> test_queue;
 	for (vector<TestActivityList>::iterator it_test_activity_list = test_activity_list.begin(); it_test_activity_list != test_activity_list.end(); it_test_activity_list++)
