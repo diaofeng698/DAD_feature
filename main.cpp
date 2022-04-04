@@ -7,6 +7,7 @@
 
 using namespace std;
 
+#define ALERT_LATEST 1
 struct InferenceResultLogic
 {
 	int state_now_;  
@@ -89,6 +90,14 @@ void OutputAlert(const int alert_result, const int longest_frame, const float al
 }
 
 
+void OutputAlertLatest(const int alert_result, const float alert_conf, Warning* warning_output)
+{
+	warning_output->warning_status_ = true;
+	warning_output->warning_conf_ = alert_conf ;
+	warning_output->warning_activity_ = alert_result;
+	cout << "alert: " << alert_result << " conf : " << warning_output->warning_conf_ << endl;
+}
+
 
 int main()
 {
@@ -98,6 +107,7 @@ int main()
 	const int KAlertTime = 10;
 	const int kBufferTime = 30;
 	cout << "reset time range is " << kResetTime <<" s, alert time range is "<< KAlertTime << " s, buffer time range is " << kBufferTime << " s" << endl;
+	cout << "Alert Mode 0: Sort 1: Latest ---> " << ALERT_LATEST << endl;
 	const float kConfThreshold = 0.0;
 	const int kSafeMode = 0;
 
@@ -129,50 +139,50 @@ int main()
 	vector<TestActivityList> test_activity_list;
 	TestActivityList temp_test_activity;
 
-	// Activity 1
-	temp_test_activity.class_index_ = kEating;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 1
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
 	// Activity 2
+	temp_test_activity.class_index_ = kDrinking;
+	temp_test_activity.time_ = 10;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 3
 	temp_test_activity.class_index_ = kSafeDriving;
 	temp_test_activity.time_ = 2;
 	test_activity_list.push_back(temp_test_activity);
 
-	// Activity 3
-	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 4
+	//temp_test_activity.class_index_ = kEating;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 4
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 3;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 5
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 5
-	temp_test_activity.class_index_ = kSmoking;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 6
+	//temp_test_activity.class_index_ = kPhoneInteraction;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 6
-	temp_test_activity.class_index_ = kPhoneInteraction;
-	temp_test_activity.time_ = 5;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 7
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 7
-	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 1;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 8
+	//temp_test_activity.class_index_ = kSmoking;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
-	// Activity 8
-	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 4;
-	test_activity_list.push_back(temp_test_activity);
-
-	// Activity 9
-	temp_test_activity.class_index_ = kEating;
-	temp_test_activity.time_ = 10;
-	test_activity_list.push_back(temp_test_activity);
+	//// Activity 9
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 16;
+	//test_activity_list.push_back(temp_test_activity);
 
 	vector<int> test_queue;
 	for (vector<TestActivityList>::iterator it_test_activity_list = test_activity_list.begin(); it_test_activity_list != test_activity_list.end(); it_test_activity_list++)
@@ -255,14 +265,23 @@ int main()
 
 				if (max_time >= alert_frame)
 				{
-					cout << "max_time: " << max_time << endl;
-					int alert_result = 1;
-					int longest_frame = 0;
-					float alert_conf = 0.0;
-					SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+					if (ALERT_LATEST)
+					{
+						cout << "-----> single activity alert latest" << temp_inference_result.state_now_ << endl;
+						OutputAlertLatest(temp_inference_result.state_now_, temp_inference_result.conf_, &warning);
+					}
+					else
+					{
+						cout << "max_time: " << max_time << endl;
+						int alert_result = 1;
+						int longest_frame = 0;
+						float alert_conf = 0.0;
+						SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
-					cout << "-----> single activity: " << alert_result << endl;
-					OutputAlert(alert_result, longest_frame, alert_conf, &warning);
+						cout << "-----> single activity: " << alert_result << endl;
+						OutputAlert(alert_result, longest_frame, alert_conf, &warning);
+					}
+
 				}
 				else
 				{
@@ -276,15 +295,22 @@ int main()
 
 					if (total_time >= alert_frame)
 					{
-						cout << "total_time: " << total_time << endl;
-						int alert_result = 1;
-						int longest_frame = 0;
-						float alert_conf = 0.0;
-						SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+						if (ALERT_LATEST)
+						{
+							cout << "-----> multi  activity alert latest" << temp_inference_result.state_now_ << endl;
+							OutputAlertLatest(temp_inference_result.state_now_, temp_inference_result.conf_, &warning);
+						}
+						else
+						{
+							cout << "total_time: " << total_time << endl;
+							int alert_result = 1;
+							int longest_frame = 0;
+							float alert_conf = 0.0;
+							SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
-						cout << "-----> multi  activity: " << alert_result << endl;
-						OutputAlert(alert_result, longest_frame, alert_conf, &warning);
-
+							cout << "-----> multi  activity: " << alert_result << endl;
+							OutputAlert(alert_result, longest_frame, alert_conf, &warning);
+						}
 					}
 
 				}
@@ -346,15 +372,22 @@ int main()
 
 						if (max_time >= alert_frame)
 						{
-							cout << "max_time: " << max_time << endl;
-							int alert_result = 1;
-							int longest_frame = 0;
-							float alert_conf = 0.0;
-							SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+							if (ALERT_LATEST)
+							{
+								cout << "-----> single activity alert latest" << temp_inference_result.state_now_ << endl;
+								OutputAlertLatest(temp_inference_result.state_now_, temp_inference_result.conf_, &warning);
+							}
+							else
+							{
+								cout << "max_time: " << max_time << endl;
+								int alert_result = 1;
+								int longest_frame = 0;
+								float alert_conf = 0.0;
+								SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
-							cout << "-----> single activity: " << alert_result << endl;
-							OutputAlert(alert_result, longest_frame, alert_conf, &warning);
-
+								cout << "-----> single activity: " << alert_result << endl;
+								OutputAlert(alert_result, longest_frame, alert_conf, &warning);
+							}
 						}
 						else
 						{
@@ -368,15 +401,23 @@ int main()
 
 							if (total_time >= alert_frame)
 							{
-								cout << "total_time: " << total_time << endl;
-								int alert_result = 1;
-								int longest_frame = 0;
-								float alert_conf = 0.0;
-								SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
+								if (ALERT_LATEST)
+								{
+									cout << "-----> multi activity alert latest" << temp_inference_result.state_now_ << endl;
+									OutputAlertLatest(temp_inference_result.state_now_, temp_inference_result.conf_, &warning);
+								}
+								else
+								{
 
-								cout << "-----> multi  activity: " << alert_result << endl;
-								OutputAlert(alert_result, longest_frame, alert_conf, &warning);
+									cout << "total_time: " << total_time << endl;
+									int alert_result = 1;
+									int longest_frame = 0;
+									float alert_conf = 0.0;
+									SortBuffer(multi_activity_buffer, &alert_result, &longest_frame, &alert_conf);
 
+									cout << "-----> multi  activity: " << alert_result << endl;
+									OutputAlert(alert_result, longest_frame, alert_conf, &warning);
+								}
 							}
 
 						}
