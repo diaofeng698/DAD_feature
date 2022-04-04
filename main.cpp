@@ -5,9 +5,9 @@
 #include <algorithm>
 #include <numeric>
 
-using namespace std;
-
 #define ALERT_LATEST 1
+
+using namespace std;
 struct InferenceResultLogic
 {
 	int state_now_;  
@@ -123,6 +123,11 @@ int main()
 	int frame_now;
 	float conf;
 
+	// record status before safedriving
+	InferenceResultLogic temp_inference_result_before_safedriving;
+	temp_inference_result_before_safedriving.conf_ = 0;
+	temp_inference_result_before_safedriving.state_now_ = 0;
+
 	int state_previous = 0;
 
 	//Input
@@ -139,49 +144,95 @@ int main()
 	vector<TestActivityList> test_activity_list;
 	TestActivityList temp_test_activity;
 
-	//// Activity 1
-	//temp_test_activity.class_index_ = kSafeDriving;
-	//temp_test_activity.time_ = 16;
-	//test_activity_list.push_back(temp_test_activity);
+	// Activity 1
+	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
 
 	// Activity 2
 	temp_test_activity.class_index_ = kDrinking;
-	temp_test_activity.time_ = 10;
+	temp_test_activity.time_ = 16;
 	test_activity_list.push_back(temp_test_activity);
 
 	// Activity 3
 	temp_test_activity.class_index_ = kSafeDriving;
-	temp_test_activity.time_ = 2;
+	temp_test_activity.time_ = 16;
 	test_activity_list.push_back(temp_test_activity);
 
-	//// Activity 4
+	// Activity 4
+	temp_test_activity.class_index_ = kEating;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 5
+	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 6
+	temp_test_activity.class_index_ = kPhoneInteraction;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 7
+	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 8
+	temp_test_activity.class_index_ = kSmoking;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 9
+	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.time_ = 16;
+	test_activity_list.push_back(temp_test_activity);
+
+
+	//	// Activity 1
 	//temp_test_activity.class_index_ = kEating;
-	//temp_test_activity.time_ = 16;
+	//temp_test_activity.time_ = 5;
+	//test_activity_list.push_back(temp_test_activity);
+
+	//// Activity 2
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 2;
+	//test_activity_list.push_back(temp_test_activity);
+
+	//// Activity 3
+	//temp_test_activity.class_index_ = kDrinking;
+	//temp_test_activity.time_ = 5;
+	//test_activity_list.push_back(temp_test_activity);
+
+	//// Activity 4
+	//temp_test_activity.class_index_ = kSafeDriving;
+	//temp_test_activity.time_ = 3;
 	//test_activity_list.push_back(temp_test_activity);
 
 	//// Activity 5
-	//temp_test_activity.class_index_ = kSafeDriving;
-	//temp_test_activity.time_ = 16;
+	//temp_test_activity.class_index_ = kSmoking;
+	//temp_test_activity.time_ = 5;
 	//test_activity_list.push_back(temp_test_activity);
 
 	//// Activity 6
 	//temp_test_activity.class_index_ = kPhoneInteraction;
-	//temp_test_activity.time_ = 16;
+	//temp_test_activity.time_ = 5;
 	//test_activity_list.push_back(temp_test_activity);
 
 	//// Activity 7
 	//temp_test_activity.class_index_ = kSafeDriving;
-	//temp_test_activity.time_ = 16;
+	//temp_test_activity.time_ = 1;
 	//test_activity_list.push_back(temp_test_activity);
 
 	//// Activity 8
-	//temp_test_activity.class_index_ = kSmoking;
-	//temp_test_activity.time_ = 16;
+	//temp_test_activity.class_index_ = kDrinking;
+	//temp_test_activity.time_ = 4;
 	//test_activity_list.push_back(temp_test_activity);
 
 	//// Activity 9
-	//temp_test_activity.class_index_ = kSafeDriving;
-	//temp_test_activity.time_ = 16;
+	//temp_test_activity.class_index_ = kEating;
+	//temp_test_activity.time_ = 10;
 	//test_activity_list.push_back(temp_test_activity);
 
 	vector<int> test_queue;
@@ -202,11 +253,11 @@ int main()
 		frame_now = *it;
 		conf = 1.0;
 
-		//For test
-		
+
 		InferenceResultLogic temp_inference_result;
 		temp_inference_result.state_now_ = frame_now;
 		temp_inference_result.conf_ = conf;
+
 
 
 		if (conf >= kConfThreshold)
@@ -238,6 +289,8 @@ int main()
 
 			if (temp_inference_result.state_now_ != kSafeMode)
 			{
+				temp_inference_result_before_safedriving.state_now_ = temp_inference_result.state_now_;
+				temp_inference_result_before_safedriving.conf_ = temp_inference_result.state_now_;
 				safe_mode_buffer = 0;
 
 				// multi_activity_buffer
@@ -375,7 +428,7 @@ int main()
 							if (ALERT_LATEST)
 							{
 								cout << "-----> single activity alert latest" << temp_inference_result.state_now_ << endl;
-								OutputAlertLatest(temp_inference_result.state_now_, temp_inference_result.conf_, &warning);
+								OutputAlertLatest(temp_inference_result_before_safedriving.state_now_, temp_inference_result_before_safedriving.conf_, &warning);
 							}
 							else
 							{
@@ -404,7 +457,7 @@ int main()
 								if (ALERT_LATEST)
 								{
 									cout << "-----> multi activity alert latest" << temp_inference_result.state_now_ << endl;
-									OutputAlertLatest(temp_inference_result.state_now_, temp_inference_result.conf_, &warning);
+									OutputAlertLatest(temp_inference_result_before_safedriving.state_now_, temp_inference_result_before_safedriving.conf_, &warning);
 								}
 								else
 								{
