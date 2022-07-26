@@ -1,5 +1,7 @@
 .idea/
 .vs/
+x64/
+*.vcxproj
 build/
 src/build/
 wandb/
@@ -38,3 +40,5 @@ img/
 *.exe
 *.out
 *.app
+/MyUT/MyUT.vcxproj.user
+/MyUT/packages.config

@@ -1,65 +1,6 @@
-#include <iostream>
-#include <map>
-#include <vector>
+#include "main.h"
 
-using namespace std;
-
-struct DadInferenceResult
-{
-	int class_idx;
-	float probability;
-};
-
-typedef struct _HIS_0_S_DriverActivity_T
-{
-	bool bDadDrinking = false;
-	bool bDadEating = false;
-	bool bDadPhoneInteraction = false;
-	bool bDadSmoking = false;
-
-	uint_fast8_t u8DadDrinkingConf = 0;
-	uint_fast8_t u8DadEatingConf = 0;
-	uint_fast8_t u8DadPhoneInteractionConf = 0;
-	uint_fast8_t u8DadSmokingConf = 0;
-
-} HIS_0_S_DriverActivity_T;
-
-enum DriverActivitySort
-{
-	kSafeDriving = 0,
-	kSmoking,
-	kDrinking,
-	kEating,
-	kPhoneInteraction,
-	kOtherActivity
-};
-struct Warning
-{
-	bool warning_status_;
-	int warning_activity_;
-	float warning_conf_;
-};
-
-vector<map<int, float>> raw_result_buffer;
-int smooth_frame = 5;
-std::map<int, float> raw_result_;
-const float kConfThreshold = 0.9;
-DadInferenceResult inference_result_previous;
-Warning warning;
-
-// Count
-int safe_driving_count = 0;
-int smoking_count = 0;
-int drinking_count = 0;
-int eating_count = 0;
-int phone_count = 0;
-int other_behavior_count = 0;
-int kFPS = 10;
-Warning previous_warning;
-
-
-
-void InferenceResultMapping(const DadInferenceResult result, DadInferenceResult &mapping_result)
+void DADFunction::InferenceResultMapping(const DadInferenceResult result, DadInferenceResult &mapping_result)
 {
 
 	if (result.class_idx == 5)
@@ -75,15 +16,16 @@ void InferenceResultMapping(const DadInferenceResult result, DadInferenceResult 
 		mapping_result.class_idx = result.class_idx;
 	}
 	mapping_result.probability = result.probability;
-
+	
+	std::cout << "Mapping Result ID : " << mapping_result.class_idx << " Conf : " << mapping_result.probability << std::endl;
 }
 
-void InferenceResultSmooth(DadInferenceResult &inference_result_smooth)
+DadInferenceResult DADFunction::InferenceResultSmooth()
 {
 	//TODO:
-	std::map<int, float> raw_result = raw_result_;
+	//std::map<int, float> raw_result = raw_result_;
 
-	raw_result_buffer.push_back(raw_result);
+	raw_result_buffer.push_back(raw_result_);
 	map<int, float> sum;
 	map<int, float> average_conf;
 	if (raw_result_buffer.size() == smooth_frame + 1)
@@ -114,7 +56,11 @@ void InferenceResultSmooth(DadInferenceResult &inference_result_smooth)
 			}
 		}
 	}
-	std::cout << "Inference Result Smooth" << std::endl;
+	std::cout << "Inference Result Smooth : " << std::endl;
+
+	DadInferenceResult inference_result_smooth;
+	inference_result_smooth.class_idx = 0;
+	inference_result_smooth.probability = 0.0;
 
 	for (std::map<int, float>::iterator it_average_conf = average_conf.begin(); it_average_conf != average_conf.end();
 		it_average_conf++)
@@ -131,9 +77,12 @@ void InferenceResultSmooth(DadInferenceResult &inference_result_smooth)
 		<< " Conf : " << inference_result_smooth.probability << std::endl;
 
 
+	return inference_result_smooth;
+
+
 }
 
-void ThresholdFilter(const DadInferenceResult current_result,
+void DADFunction::ThresholdFilter(const DadInferenceResult current_result,
 	DadInferenceResult &filter_result)
 {
 
@@ -141,17 +90,17 @@ void ThresholdFilter(const DadInferenceResult current_result,
 	{
 		filter_result.class_idx = inference_result_previous.class_idx = current_result.class_idx;
 		filter_result.probability = inference_result_previous.probability = current_result.probability;
-		std::cout << "threshold filter " << filter_result.class_idx << std::endl;
+		std::cout << "threshold filter ID : " << filter_result.class_idx << " Conf : " << filter_result.probability << std::endl;
 	}
 	else
 	{
 		filter_result.class_idx = inference_result_previous.class_idx;
 		filter_result.probability = inference_result_previous.probability;
-		std::cout << "threshold filter " << filter_result.class_idx << std::endl;
+		std::cout << "threshold filter ID : " << filter_result.class_idx << " Conf : " << filter_result.probability << std::endl;
 	}
 }
 
-void ActivityCountInitial(const DadInferenceResult filter_result)
+void DADFunction::ActivityCountInitial(const DadInferenceResult filter_result)
 {
 	if (filter_result.class_idx == kSmoking)
 	{
@@ -183,9 +132,11 @@ void ActivityCountInitial(const DadInferenceResult filter_result)
 		smoking_count = drinking_count = eating_count = phone_count = safe_driving_count = 0;
 		other_behavior_count++;
 	}
+	std::cout << "***COUNT SUMMARY***" << std::endl;
+	std::cout << "Smoke: " << smoking_count << " Drink: " << drinking_count << " Eating: " << eating_count << " Phone: " << phone_count << " Safe: " << safe_driving_count << " Other: " << other_behavior_count << std::endl;
 }
 
-void AlertLogicFunc(const DadInferenceResult filter_result)
+void DADFunction::AlertLogicFunc(const DadInferenceResult filter_result)
 {
 	if (smoking_count >= 2 * kFPS)
 	{
@@ -227,9 +178,14 @@ void AlertLogicFunc(const DadInferenceResult filter_result)
 			warning.warning_conf_ = previous_warning.warning_conf_;
 		}
 	}
+	previous_warning.warning_activity_ = warning.warning_activity_;
+	previous_warning.warning_conf_ = warning.warning_conf_;
+
+	std::cout << "Alert Enable: " << warning.warning_status_ << " Alert Status: " << warning.warning_activity_ << " Alert Conf: " << warning.warning_conf_ << std::endl;
+	
 }
 
-void DriverActivityDetectionAlertOutput(HIS_0_S_DriverActivity_T& Dad_OutputResult)
+void DADFunction::DriverActivityDetectionAlertOutput(HIS_0_S_DriverActivity_T& Dad_OutputResult)
 {
 	Dad_OutputResult.bDadDrinking = false;
 	Dad_OutputResult.bDadEating = false;
@@ -265,13 +221,13 @@ void DriverActivityDetectionAlertOutput(HIS_0_S_DriverActivity_T& Dad_OutputResu
 	}
 }
 
-void IntegrationFunctionLogic(HIS_0_S_DriverActivity_T& Dad_OutputResult)
+void DADFunction::IntegrationFunctionLogic(HIS_0_S_DriverActivity_T& Dad_OutputResult)
 {
 	DadInferenceResult inference_result_smooth;
 	DadInferenceResult filter_result;
 	DadInferenceResult mapping_result;
 	
-	InferenceResultSmooth(inference_result_smooth);
+	inference_result_smooth = InferenceResultSmooth();
 	ThresholdFilter(inference_result_smooth, filter_result);
 	InferenceResultMapping(filter_result, mapping_result);
 	ActivityCountInitial(mapping_result);
@@ -284,10 +240,80 @@ void IntegrationFunctionLogic(HIS_0_S_DriverActivity_T& Dad_OutputResult)
 
 
 
+
 int main()
 {
 	HIS_0_S_DriverActivity_T DadStateResult;
-	IntegrationFunctionLogic(DadStateResult);
+	DADFunction dad_func;
+
+
+	DadInferenceResult inference_result_smooth;
+	DadInferenceResult filter_result;
+	DadInferenceResult mapping_result;
+	
+	srand((unsigned)time(NULL));
+	
+	// Test Module
+	vector<TestActivityList> test_activity_list;
+	TestActivityList temp_test_activity;
+
+	// Activity 1
+	temp_test_activity.class_index_ = kOtherActivity;
+	temp_test_activity.time_ = 2;
+	test_activity_list.push_back(temp_test_activity);
+
+	// Activity 2
+	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.time_ = 2;
+	test_activity_list.push_back(temp_test_activity);
+
+	vector<int> test_queue;
+	for (vector<TestActivityList>::iterator it_test_activity_list = test_activity_list.begin(); it_test_activity_list != test_activity_list.end(); it_test_activity_list++)
+	{
+		for (int i = 0; i < it_test_activity_list->time_ * dad_func.kFPS; i++)
+		{
+			test_queue.push_back(it_test_activity_list->class_index_);
+		}
+	}
+
+
+	int frame_index = 1;
+	for (vector<int>::iterator it = test_queue.begin(); it != test_queue.end(); it++)
+	{
+
+		// TODO:  clear buffer
+		dad_func.raw_result_.clear();
+		// Insert rew result
+		for (int i = 0; i < 9; i++) {
+			float conf = rand() % (N + 1) / (float)(N + 1);
+			// std::cout << conf << "   ";
+			dad_func.raw_result_.insert(pair<int, float>(i, conf));
+		}
+		// std::cout << std::endl;
+		// pipeline
+		inference_result_smooth = dad_func.InferenceResultSmooth();
+		dad_func.ThresholdFilter(inference_result_smooth, filter_result);
+		dad_func.InferenceResultMapping(filter_result, mapping_result);
+		//dad_func.ActivityCountInitial(mapping_result);
+		//dad_func.AlertLogicFunc(mapping_result);
+
+
+		cout << "****************Start*******************" << endl;
+		cout << "current activity: " << *it << "    frame: " << frame_index << endl;
+		DadInferenceResult test_mapping_result;
+		test_mapping_result.class_idx = *it;
+		test_mapping_result.probability = *it * 0.1;
+		dad_func.ActivityCountInitial(test_mapping_result);
+		dad_func.AlertLogicFunc(test_mapping_result);
+		frame_index++;
+
+
+	}
+	
+	
+	
+	//dad_func.IntegrationFunctionLogic(DadStateResult);
+	system("pause");
     
     return 0;
 }
