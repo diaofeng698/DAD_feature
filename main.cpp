@@ -133,7 +133,7 @@ void DADFunction::ActivityCountInitial(const DadInferenceResult filter_result)
 		other_behavior_count++;
 	}
 	std::cout << "***COUNT SUMMARY***" << std::endl;
-	std::cout << "Smoke: " << smoking_count << " Drink: " << drinking_count << " Eating: " << eating_count << " Phone: " << phone_count << " Safe: " << safe_driving_count << " Other: " << other_behavior_count << std::endl;
+	std::cout << "Safe: " << safe_driving_count << " Smoke: " << smoking_count << " Drink: " << drinking_count << " Eating: " << eating_count << " Phone: " << phone_count <<  " Other: " << other_behavior_count << std::endl;
 }
 
 void DADFunction::AlertLogicFunc(const DadInferenceResult filter_result)
@@ -172,7 +172,7 @@ void DADFunction::AlertLogicFunc(const DadInferenceResult filter_result)
 	}
 	else
 	{
-		if (previous_warning.warning_status_ = 1)
+		if (previous_warning.warning_status_ == 1)
 		{
 			warning.warning_activity_ = previous_warning.warning_activity_;
 			warning.warning_conf_ = previous_warning.warning_conf_;
@@ -180,6 +180,7 @@ void DADFunction::AlertLogicFunc(const DadInferenceResult filter_result)
 	}
 	previous_warning.warning_activity_ = warning.warning_activity_;
 	previous_warning.warning_conf_ = warning.warning_conf_;
+	previous_warning.warning_status_ = warning.warning_status_;
 
 	std::cout << "Alert Enable: " << warning.warning_status_ << " Alert Status: " << warning.warning_activity_ << " Alert Conf: " << warning.warning_conf_ << std::endl;
 	
@@ -258,12 +259,12 @@ int main()
 	TestActivityList temp_test_activity;
 
 	// Activity 1
-	temp_test_activity.class_index_ = kOtherActivity;
-	temp_test_activity.time_ = 2;
+	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.time_ = 1;
 	test_activity_list.push_back(temp_test_activity);
 
 	// Activity 2
-	temp_test_activity.class_index_ = kSafeDriving;
+	temp_test_activity.class_index_ = kDrinking;
 	temp_test_activity.time_ = 2;
 	test_activity_list.push_back(temp_test_activity);
 
